@@ -6,6 +6,7 @@ from texttable import Texttable
 from progressbar import ProgressBar, Percentage, Bar
 
 from django.core.urlresolvers import resolve, Resolver404
+from datetime import datetime
 
 PATTERN = r"""^([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9:]{8},[0-9]{3}) (GET|POST|PUT|DELETE|HEAD) "(.*)" \((.*)\) (.*?) \((\d+)q, (.*?)\)"""
 
@@ -69,7 +70,7 @@ def generate_table_from(data):
 
     return table.draw()
 
-def analyze_log_file(logfile, pattern, reverse_paths=True, progress=True):
+def analyze_log_file(logfile, pattern, reverse_paths=True, progress=True, start_at=None):
     "Given a log file and regex group and extract the performance data"
     if progress:
         lines = count_lines_in(logfile)
@@ -92,6 +93,10 @@ def analyze_log_file(logfile, pattern, reverse_paths=True, progress=True):
         time = parsed[4]
         sql = parsed[5]
         sqltime = parsed[6]
+        
+        date = datetime.strptime(date.split(',')[0], '%Y-%m-%d %H:%M:%S')
+        if start_at is not None and date < start_at:
+            continue
 
         try:
             ignore = False
