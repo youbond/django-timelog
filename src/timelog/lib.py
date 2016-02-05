@@ -7,6 +7,7 @@ from progressbar import ProgressBar, Percentage, Bar
 
 from django.core.urlresolvers import resolve, Resolver404
 from datetime import datetime
+from pytz import UTC
 
 PATTERN = r"""^([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9:]{8},[0-9]{3}) (GET|POST|PUT|DELETE|HEAD) "(.*)" \((.*)\) (.*?) \((\d+)q, (.*?)\)"""
 
@@ -94,7 +95,7 @@ def analyze_log_file(logfile, pattern, reverse_paths=True, progress=True, start_
         sql = parsed[5]
         sqltime = parsed[6]
         
-        date = datetime.strptime(date.split(',')[0], '%Y-%m-%d %H:%M:%S')
+        date = datetime.strptime(date.split(',')[0], '%Y-%m-%d %H:%M:%S').replace(tzinfo=UTC)
         if start_at is not None and date < start_at:
             continue
 
