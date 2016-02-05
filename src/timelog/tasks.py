@@ -36,11 +36,12 @@ def push_timelog_analytics_to_cloudwatch():
             data = analyze_log_file(settings.TIMELOG_LOG, PATTERN, progress=False, start_at=last_runtime)
             
             average_load_time = Decimal('-1') # if no activity on the site, we report -1 as average load time by default.
+            max_load_time = Decimal('-1') # if no activity on the site, we report -1 as max load time by default.
             if data:
                 load_times = np.array([ item['times'] for item in data.values() ])
                 load_times = np.hstack(load_times.flat) # flatten the array
-                average_load_time = Decimal(np.average(load_times))
-                average_load_time = average_load_time.quantize(Decimal('0.001'))
+                average_load_time = Decimal(np.average(load_times)).quantize(Decimal('0.001'))
+                max_load_time = Decimal(np.max(load_times)).quantize(Decimal('0.001'))
             
             aws = Session(aws_access_key_id=settings.AWS_ACCESS_KEY_ID, 
                           aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY, 
@@ -57,6 +58,18 @@ def push_timelog_analytics_to_cloudwatch():
                 }],
                 'Timestamp':timezone.now(),
                 'Value':average_load_time,
+                'Unit': 'Seconds'
+            },{
+                'MetricName':'MaxPageResponseTime',
+                'Dimensions':[{
+                   'Name':'Env', 
+                   'Value':settings.CLOUDWATCH_ENV
+                },{
+                   'Name':'Server', 
+                   'Value':settings.CLOUDWATCH_SERVER
+                }],
+                'Timestamp':timezone.now(),
+                'Value':max_load_time,
                 'Unit': 'Seconds'
             }]
             cloudwatch.put_metric_data(Namespace=settings.CLOUDWATCH_NAMESPACE,MetricData=metric_data)
